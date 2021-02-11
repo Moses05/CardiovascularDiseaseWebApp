@@ -1,7 +1,7 @@
 import preparing_data
 import streamlit as st
 import matplotlib.pyplot as plt
-import seaborn as sns
+# import seaborn as sns
 import sqlite3
 import pandas as pd
 from preparing_data import model2, X, y
