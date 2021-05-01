@@ -1,11 +1,12 @@
+# Importing all libaries
 import preparing_data
 import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
-import sqlite3
 import pandas as pd
+import sqlite3
+import time
 from preparing_data import model2, X, y
-# import hashlib
 
 conn = sqlite3.connect("doctor_logins.db")
 cursor = conn.cursor()
@@ -27,8 +28,20 @@ def view_all_users():
 	data = cursor.fetchall()
 	return data
 
-# def create_connection(d)
+conn1 = sqlite3.connect("appointments.db")
+cursor1 = conn1.cursor()
 
+def create_appointments_table():
+	cursor1.execute("""CREATE TABLE IF NOT EXISTS appointments(firstName TEXT, lastName TEXT, email TEXT)""")
+
+def add_patient(firstName, lastName, email):
+	conn1.execute("INSERT INTO appointments VALUES (?, ?, ?)", (firstName, lastName, email))
+	conn1.commit()
+
+def view_all_appointments():
+	cursor1.execute("SELECT * FROM appointments")
+	data = cursor1.fetchall()
+	return data
 
 def main():
 	st.title("Fortismere Surgery")
@@ -55,6 +68,13 @@ def main():
 
 				if admin_tools == "Check appointments":
 					st.subheader("Check appointments")
+					clean_db = pd.DataFrame(view_all_appointments(), columns = ["firstName", "lastName", "email"])
+					st.dataframe(clean_db)
+
+				class Queue:
+					def __init__(self, )
+
+
 		
 				elif admin_tools == "View prediction analytics":
 					st.header("Prediction analytics")
@@ -235,16 +255,33 @@ def main():
 
 			oldpeak = st.number_input("ST depression induced by exercise", min_value=0.0, max_value= 10.0, step = 0.1)
 
-			characteristics = [[age, sex, cp, trestbps, chol, fbs, restecg, thalach, 	exang, oldpeak]]
+			characteristics = [[age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak]]
 	
 			model2.fit(X, y)
 	
 			prediction = model2.predict(characteristics)
+			
+			if st.checkbox("Predict"):
+				if prediction == 1:
+					st.info("You have a cardiovascular disease")
+					st.info("[Check the NHS website for more information](https://www.nhs.uk/conditions/cardiovascular-disease/)")
+					time.sleep(1)
 	
-			if prediction == 1:
-				st.write("You have a cardiovascular disease g. Get some help")
-			else:
-				st.write("Yh ur gd still")
+					if st.checkbox("Do you want an appointment?"):
+						create_appointments_table()
+						firstName = st.text_input("Enter your first name")
+						lastName = st.text_input("Enter your last name")
+						email = st.text_input("Enter your email")
+						# appointmentDate = st.date_input(str("Select a date for your appointment"))
+						# appointmentTime = st.time_input(str("Select a time for your appointment"))
+
+						placeholder = None
+
+						if st.button("Book appointment"):
+							add_patient(firstName, lastName, email)
+							st.success(f"")
+				else:
+					st.info("You do not have a cardiovascular disease")
 
 		predictor()
 
