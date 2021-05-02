@@ -11,21 +11,26 @@ class Patient:
 		PatientID = (f"{self.firstName[0]}{self.lastName}{randomNumber}")
 		return PatientID
 
-
 class Doctor:
 	def __init__(self, firstName, lastName, email, password):
 		self.firstName = firstName
 		self.lastName = lastName
 		self.email = email
+		self.password = password
 
-	def login(self):
+	def DoctorID(self):
 		randomNumber = random.randint(1,999)
-		DoctorID = (f"{self.firstName[0]}{self.lastName}{randomNumber}")
-		return DoctorID
+		self.DoctorID = (f"{self.firstName[0]}{self.lastName}{randomNumber}")
+		return self.DoctorID
 
-sam = Patient("Sam", "Makola", "mmsdkfosfksd@sdfsfds.com")
+	def add(self):
+		setattr(self, "DoctorID", self.DoctorID())
+		all = vars(self)
+		return all.keys()
 
-print(sam.PatientID())
-Doctor1 = Doctor("Moses", "Peter", "sdfkjnsfkjsd@Sdfsdfsd", "jdsfnjskdf")
+moses = Doctor("Moses", "Makola", "mmakola67@gmail.com", "Test")
 
-print(Doctor1.login())
+# moses.DoctorID()
+
+# print(moses.DoctorID())
+print(moses.add())

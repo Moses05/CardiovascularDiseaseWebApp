@@ -1,47 +1,86 @@
 # Importing all libaries
 import preparing_data
+import random
+import appointment_classes
 import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import sqlite3
 import time
+import re
 from preparing_data import model2, X, y
 
-conn = sqlite3.connect("doctor_logins.db")
+conn = sqlite3.connect("databases.db")
 cursor = conn.cursor()
 
-def create_usertable():
-	cursor.execute("CREATE TABLE IF NOT EXISTS usertable(username TEXT, password TEXT)")
+class Doctors:
+	def __init__(self, firstName, lastName, email, password):
+		self.firstName = firstName
+		self.lastName = lastName
+		self.email = email
+		self.password = password
+	
+	def create_doctor_table():
+		cursor.execute("""CREATE TABLE IF NOT EXISTS doctors(firstName TEXT, lastName TEXT, email TEXT, password TEXT, DoctorID TEXT)""")
+	
+	def CreateDoctorID(self):
+		randomNumber = random.randint(1,999)
+		DoctorID = (f"{self.firstName[0]}{self.lastName}{randomNumber}")
+		return DoctorID
 
-def add_user_data(username, password):
-	cursor.execute("INSERT INTO usertable(username, password) VALUES (?,?)", (username, password))
-	conn.commit()
+	def add_doctors(self):
+		setattr(self, "DoctorID", self.CreateDoctorID())
+		conn.execute("INSERT INTO doctors VALUES (?, ?, ?, ?, ?)", (self.firstName, self.lastName, self.email, self.password, self.DoctorID))
+		conn.commit()
+	
+	def login_user(DoctorID, password):
+		cursor.execute("SELECT * FROM doctors WHERE username = ? AND password = ?", (self.DoctorID, self.password))
+		data = cursor.fetchall()
+		return 
+	
+	def view_all_doctors():
+		cursor.execute("SELECT * FROM doctors")
+		data = cursor.fetchall()
+		return data
 
-def login_user(username, password):
-	cursor.execute("SELECT * FROM usertable WHERE username = ? AND password = ?", (username, password))
-	data = cursor.fetchall()
-	return data
 
-def view_all_users():
-	cursor.execute("SELECT * FROM usertable")
-	data = cursor.fetchall()
-	return data
+def login_user(DoctorID, password):
+		cursor.execute("SELECT * FROM doctors WHERE DoctorID = ? AND password = ?", (DoctorID, password))
+		data = cursor.fetchall()
+		return data
 
-conn1 = sqlite3.connect("appointments.db")
-cursor1 = conn1.cursor()
 
-def create_appointments_table():
-	cursor1.execute("""CREATE TABLE IF NOT EXISTS appointments(firstName TEXT, lastName TEXT, email TEXT)""")
+# def create_login_table():
+# 	cursor.execute("""CREATE TABLE IF NOT EXISTS logintable(username TEXT, password TEXT)""")
+
+# def add_login_data(username, password):
+# 	cursor.execute("INSERT INTO logintable(username, password) VALUES (?,?)", (username, password))
+# 	conn.commit()
+
+# def login_user(username, password):
+# 	cursor.execute("SELECT * FROM logintable WHERE username = ? AND password = ?", (username, password))
+# 	data = cursor.fetchall()
+# 	return data
+
+# def view_all_logins():
+# 	cursor.execute("SELECT * FROM logintable")
+# 	data = cursor.fetchall()
+# 	return data
+
+def create_patients_table():
+	cursor.execute("""CREATE TABLE IF NOT EXISTS patients(firstName TEXT, lastName TEXT, email TEXT)""")
 
 def add_patient(firstName, lastName, email):
-	conn1.execute("INSERT INTO appointments VALUES (?, ?, ?)", (firstName, lastName, email))
-	conn1.commit()
+	conn.execute("INSERT INTO patients VALUES (?, ?, ?)", (firstName, lastName, email))
+	conn.commit()
 
-def view_all_appointments():
-	cursor1.execute("SELECT * FROM appointments")
-	data = cursor1.fetchall()
+def view_all_patients():
+	cursor.execute("SELECT * FROM patients")
+	data = cursor.fetchall()
 	return data
+
+
 
 def main():
 	st.title("Fortismere Surgery")
@@ -54,28 +93,29 @@ def main():
 
 		st.image("doctor.png", width=100)
 
-		username = st.text_input("Username: ")
+		DoctorID = st.text_input("Doctor ID: ")
 		password = st.text_input("Password: ", type="password")
-
+		
 		# try change this to button
 		if st.checkbox("Click to Login"):
-			create_usertable()
-			result = login_user(username, password)
+			Doctors.create_doctor_table()
+			result = Doctors.login_user(DoctorID, password)
+
 			if result:
-				st.success(f"Logged in as {username}")
+				st.success(f"Logged in as {DoctorID}")
 
 				admin_tools = st.sidebar.selectbox("Admin Tools",["Check appointments","View prediction analytics","Add doctor","View doctors"])
 
 				if admin_tools == "Check appointments":
+					create_patients_table()
 					st.subheader("Check appointments")
-					clean_db = pd.DataFrame(view_all_appointments(), columns = ["firstName", "lastName", "email"])
+					clean_db = pd.DataFrame(view_all_patients(), columns = ["firstName", "lastName", "email"])
 					st.dataframe(clean_db)
 
-				class Queue:
-					def __init__(self, )
+				# class Queue:
+				# 	def __init__(self):
+				# 		pass
 
-
-		
 				elif admin_tools == "View prediction analytics":
 					st.header("Prediction analytics")
 
@@ -179,20 +219,29 @@ def main():
 
 				elif admin_tools == "Add doctor":
 					st.subheader("Add doctor")
-					new_doctor = st.text_input("Username")
-					new_password = st.text_input("Password", type = "password")
+					new_doctor_firstName = st.text_input("Enter the doctors first name")
+					new_doctor_lastName = st.text_input("Enter the doctors name")
+					new_doctor_email = st.text_input("Enter the doctors email")
+					new_doctor_password = st.text_input("Enter the doctors new password", type = "password")
+
+					email_check = re.search("[a-zA-Z0-9]+@[Fortismere]+.[surgery]", new_doctor_email)
+
+					while email_check == None:
+						st.warning("Incorrect Email Input, only email domain is '@fortismere.com'")
+						new_doctor_email = st.text_input("Re enter the doctors email")
 					
 					if st.button("Add Doctor"):
-						create_usertable()
-						add_user_data(new_doctor, new_password)
-						st.success("You have successfully added a new doctor")
-						st.info("The new doctor can login in the menu section and access the admin tools")
+						Doctors.create_doctor_table()
+						new_doctor = Doctors(new_doctor_firstName, new_doctor_lastName, new_doctor_email, new_doctor_password)
 
+						Doctors.add_doctors(new_doctor)
+						st.success(f"You have successfully added a new doctor under the id: {new_doctor.DoctorID}")
+						st.info("The new doctor can login in the menu section and access the admin tools")
 
 				elif admin_tools == "View doctors":
 					st.subheader("View doctors")
-					user_results = view_all_users()
-					clean_db = pd.DataFrame(user_results, columns = ["Username", "Password"])
+					login_results = Doctors.view_all_doctors()
+					clean_db = pd.DataFrame(login_results, columns = ["First Name", "Last Name", "Email", "Password", "Doctor ID"])
 					st.dataframe(clean_db)
 
 			else:
@@ -268,18 +317,16 @@ def main():
 					time.sleep(1)
 	
 					if st.checkbox("Do you want an appointment?"):
-						create_appointments_table()
+						create_patients_table()
 						firstName = st.text_input("Enter your first name")
 						lastName = st.text_input("Enter your last name")
 						email = st.text_input("Enter your email")
 						# appointmentDate = st.date_input(str("Select a date for your appointment"))
 						# appointmentTime = st.time_input(str("Select a time for your appointment"))
 
-						placeholder = None
-
 						if st.button("Book appointment"):
 							add_patient(firstName, lastName, email)
-							st.success(f"")
+							st.success(f"You will be contacted by a Doctor soon")
 				else:
 					st.info("You do not have a cardiovascular disease")
 
